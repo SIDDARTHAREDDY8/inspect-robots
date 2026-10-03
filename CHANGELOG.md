@@ -63,6 +63,8 @@ All notable changes to this project are documented here. The format is based on
   `eval()` emits a `UserWarning` and the run summary and `inspect` print how
   many trials the metrics rest on.
 
+- **CLI:** Terminate the `ffmpeg` subprocess, close stdin, wait for exit, and unlink partial output if video encoding is interrupted by an escaping exception (e.g. `KeyboardInterrupt`, `MemoryError`) ([#508](https://github.com/robocurve/inspect-robots/issues/508)).
+
 - **Core:** Treat a failed Git working-tree status check as unknown provenance
   instead of recording the bare commit SHA as clean ([#473](https://github.com/robocurve/inspect-robots/issues/473)).
 
