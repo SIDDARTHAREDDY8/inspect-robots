@@ -56,12 +56,12 @@ All notable changes to this project are documented here. The format is based on
 
 ### Fixed
 
-- **Core:** a run in which no scene completed cleanly and the errored trials
-  are the majority no longer reports `status == "success"` on the surviving
-  minority's metrics (survivor bias,
-  [#440](https://github.com/robocurve/inspect-robots/issues/440)). The run is
-  now an `error` with the surviving-trial count in the message; runs that
-  merely lost flaky trials stay tolerated.
+- **Core:** a run in which no scene completed cleanly now warns instead of
+  passing silently (survivor bias,
+  [#440](https://github.com/robocurve/inspect-robots/issues/440)). Its status is
+  unchanged, since `fail_on_error` stays the caller's tolerance control, but
+  `eval()` emits a `UserWarning` and the run summary and `inspect` print how
+  many trials the metrics rest on.
 
 - **Core:** Treat a failed Git working-tree status check as unknown provenance
   instead of recording the bare commit SHA as clean ([#473](https://github.com/robocurve/inspect-robots/issues/473)).

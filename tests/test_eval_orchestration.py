@@ -573,12 +573,12 @@ def test_all_trials_errored_degrades_to_error_status(tmp_path: Path) -> None:
     assert log.results.metrics == {}
 
 
-def test_survivor_minority_across_errored_scenes_degrades_to_error(
+def test_survivor_minority_across_errored_scenes_warns_but_keeps_status(
     tmp_path: Path,
 ) -> None:
-    # Issue #440: a run in which no scene completed cleanly and the errored
-    # trials are the majority must not report success on the surviving
-    # minority's metrics.
+    # Issue #440: fail_on_error stays the caller's tolerance control, so a run
+    # with no clean scene keeps its status, but the caller must be warned that
+    # its metrics rest on a surviving minority.
     class _FlakyPolicy(ScriptedPolicy):
         def __init__(self) -> None:
             super().__init__()
@@ -597,15 +597,12 @@ def test_survivor_minority_across_errored_scenes_degrades_to_error(
         max_steps=60,
         epochs=6,
     )
-    (log,) = eval(task, _FlakyPolicy(), CubePickEmbodiment(), log_dir=str(tmp_path))
-    assert log.status == "error"
-    assert log.error == (
-        "all 1 scene(s) errored and 5 of 6 trial(s) errored; "
-        "metrics rest on only 1 surviving trial(s)"
-    )
+    expected = r"no scene completed cleanly \(5 of 6 trial\(s\) errored\)"
+    with pytest.warns(UserWarning, match=expected):
+        (log,) = eval(task, _FlakyPolicy(), CubePickEmbodiment(), log_dir=str(tmp_path))
+    assert log.status == "success"
     assert log.results.errored_trials == 5
     assert log.results.total_trials == 6
-    # The per-scene data is still recorded for forensics.
     assert log.samples[0].status == "error"
 
 
@@ -630,7 +627,9 @@ def test_partially_errored_run_with_clean_scene_stays_success(
         max_steps=60,
         epochs=2,
     )
-    (log,) = eval(task, _BoomFirstScenePolicy(), CubePickEmbodiment(), log_dir=str(tmp_path))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        (log,) = eval(task, _BoomFirstScenePolicy(), CubePickEmbodiment(), log_dir=str(tmp_path))
     assert log.status == "success"
     assert [s.status for s in log.samples] == ["error", "success"]
     assert log.results.errored_trials == 2
