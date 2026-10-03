@@ -1595,9 +1595,11 @@ def _announce_live_view(
     url = ""
     if headless:
         fields = env.get("SSH_CONNECTION", "").split()
-        host = fields[2] if len(fields) == 4 else socket.gethostname()
-        if ":" in host and not (host.startswith("[") and host.endswith("]")):
-            host = f"[{host}]"
+        host = fields[2] if len(fields) == 4 else ""
+        # The suggested `--host 0.0.0.0` server listens on IPv4 only, so an
+        # IPv6 address from SSH_CONNECTION would name a URL nothing serves.
+        if not host or ":" in host:
+            host = socket.gethostname()
         url = f"; open http://{host}:8300/"
     print(
         _styled(
@@ -2066,7 +2068,9 @@ def _cmd_inspect(
                 print(_styled(f"hint: render videos with: inspect-robots video {path}", _DIM))
     print("metrics:")
     for name, value in sorted(log.results.metrics.items()):
-        print(f"  {name}: {_format_metric(value)}")
+        abstained = log.results.abstentions.get(name, 0)
+        suffix = f" ({abstained} abstained)" if abstained else ""
+        print(f"  {name}: {_format_metric(value)}{suffix}")
     print("scenes:")
     for scene in log.samples:
         reduced = "  ".join(f"{k}={_format_metric(v)}" for k, v in sorted(scene.reduced.items()))
